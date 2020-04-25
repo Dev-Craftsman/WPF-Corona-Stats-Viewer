@@ -1,6 +1,5 @@
 ﻿using MyCoronaStats.module.countries;
 using MyCoronaStats.module.dailystat;
-using MyCoronaStats.module.main;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
@@ -15,19 +14,29 @@ using System.Text;
 using System.Text.Json;
 using System.Windows.Input;
 using OxyPlot;
+using System.Windows;
 
 namespace MyCoronaStats
 {
     class MainWindowViewModel : INotifyPropertyChanged
     {
+
+        internal MainWindowViewModel()
+        {
+            CollectDataButtonVisbility = Visibility.Visible;
+            _model = new module.main.Model();
+        }
+
         private const string URL_COUNTRIES = "https://covid19.mathdro.id/api/countries";
 
         // example https://covid19.mathdro.id/api/daily/04-14-2020
         private const string URL_DAILY_DATA = "https://covid19.mathdro.id/api/daily/";
 
-        private readonly module.main.Model _model = new module.main.Model();
+        private readonly module.main.Model _model;
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        private BackgroundWorker worker;
 
         protected void OnPropertyChanged([CallerMemberName] string name = null)
         {
@@ -36,13 +45,107 @@ namespace MyCoronaStats
 
         public ICommand CollectDataCommand => new RelayCommand(collectData, o => true);
 
+        private int collectDateProgress;
+
+        public int CollectDateProgress
+        {
+            get
+            {
+                return collectDateProgress;
+            }
+
+            set
+            {
+                collectDateProgress = value;
+                OnPropertyChanged(nameof(CollectDateProgress));
+            }
+        }
+
+
+        private Visibility collectDataButtonVisbility;
+
+        public Visibility CollectDataButtonVisbility
+        {
+            get
+            {
+                return collectDataButtonVisbility;
+            }
+            set
+            {
+                collectDataButtonVisbility = value;
+                OnPropertyChanged(nameof(CollectDataButtonVisbility));
+                OnPropertyChanged(nameof(ProgressBarVisbility));
+                OnPropertyChanged(nameof(MainGridIsEnabled));
+            }
+        }
+
+        public bool MainGridIsEnabled
+        {
+            get
+            {
+                return collectDataButtonVisbility == Visibility.Visible ? true : false;
+            }
+        }
+
+        public Visibility ProgressBarVisbility
+        {
+            get
+            {
+                return collectDataButtonVisbility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+
+        public Visibility CountrySelectVisbility
+        {
+            get
+            {
+                return _model.countries == null || !_model.countries.countries.Any() ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+
         private void collectData(object obj)
         {
+            worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            worker.WorkerSupportsCancellation = true;
+            worker.DoWork += collectDataDoWork;
+            worker.ProgressChanged += collectDataDoWorkProgressChanged;
+            worker.RunWorkerCompleted += collectDataRunWorkerCompleted;
+            worker.RunWorkerAsync();
+        }
+
+        private void collectDataRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            CollectDataButtonVisbility = Visibility.Visible;
+            if (_model.countries.countries.Any(country => country.name.Equals("Germany")))
+            {
+                SelectedCountry = "Germany";
+            }
+            OnPropertyChanged(nameof(CountrySelectVisbility));
+        }
+
+        private void collectDataDoWorkProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            CollectDateProgress = e.ProgressPercentage;
+        }
+
+        private void collectDataDoWork(object sender, DoWorkEventArgs e)
+        {
+            CollectDataButtonVisbility = Visibility.Collapsed;
+
+            DateTime date = new DateTime(2020, 2, 1);
+            int fullCount = getFullCount(date);
+
+            int currentCount = 0;
+            worker.ReportProgress(100 * currentCount / fullCount);
+
             WebClient client = new WebClient();
             string countriesString = client.DownloadString(URL_COUNTRIES);
             _model.countries = JsonSerializer.Deserialize<Countries>(countriesString);
+            _model.dailyStats = new DailyStatModels();
+            currentCount++;
+            worker.ReportProgress(100 * currentCount / fullCount);
 
-            DateTime date = new DateTime(2020, 2, 1);
             while (date < DateTime.Now)
             {
                 string datePart = date.ToString("MM-dd-yyyy");
@@ -54,19 +157,35 @@ namespace MyCoronaStats
                     _model.dailyStats.addDailyStats(dailyData, date);
 
                 }
-                catch (WebException e)
+                catch (WebException we)
                 {
-                    e.ToString();
+                    we.ToString();
                 }
                 date = date.AddDays(1);
+                currentCount++;
+                worker.ReportProgress(100 * currentCount / fullCount);
             }
 
             OnPropertyChanged(nameof(Countries));
         }
 
+        private static int getFullCount(DateTime date)
+        {
+            int fullCount = 1;
+
+            while (date < DateTime.Now)
+            {
+                date = date.AddDays(1);
+                fullCount++;
+            }
+
+            return fullCount;
+        }
+
         public IEnumerable<string> Countries => _model.countries != null ? _model.countries.countries.Select(country => country.name) : null;
 
         private string _selectedCountry;
+
 
         public string SelectedCountry
         {
@@ -78,6 +197,7 @@ namespace MyCoronaStats
             set
             {
                 _selectedCountry = value;
+                OnPropertyChanged(nameof(SelectedCountry));
                 OnPropertyChanged(nameof(OxyPlotModelCommulated));
                 OnPropertyChanged(nameof(OxyPlotModelDaily));
             }
@@ -93,7 +213,7 @@ namespace MyCoronaStats
         {
             get
             {
-                if (!_model.dailyStats.dailyStats.Any())
+                if (_model.dailyStats == null || !_model.dailyStats.dailyStats.Any())
                 {
                     return null;
                 }
@@ -116,7 +236,7 @@ namespace MyCoronaStats
 
 
                 var plotModel = new OxyPlot.PlotModel();
-                plotModel.Title = "Zahlen - " + SelectedCountry;
+                plotModel.Title = "Corona Data - " + SelectedCountry;
                 var dateTimeAxis1 = new DateTimeAxis
                 {
                     CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek,
@@ -124,10 +244,10 @@ namespace MyCoronaStats
                     Position = AxisPosition.Bottom
                 };
                 plotModel.Axes.Add(dateTimeAxis1);
-                addDateToPlotModel(dataConfirmed, plotModel, "bestätigte Infektionen", OxyColor.FromRgb(245, 255, 0));
-                addDateToPlotModel(dataActive, plotModel, "aktive Infektionen", OxyColor.FromRgb(255, 0, 0));
-                addDateToPlotModel(dataDeath, plotModel, "Tote nach Infektionen", OxyColor.FromRgb(0, 0, 0));
-                addDateToPlotModel(dataRecovered, plotModel, "Gesenene nach Infektionen", OxyColor.FromRgb(0, 255, 0));
+                addDateToPlotModel(dataConfirmed, plotModel, "confirmed infections", OxyColor.FromRgb(245, 255, 0));
+                addDateToPlotModel(dataActive, plotModel, "active infections", OxyColor.FromRgb(255, 0, 0));
+                addDateToPlotModel(dataDeath, plotModel, "deaths after infection", OxyColor.FromRgb(0, 0, 0));
+                addDateToPlotModel(dataRecovered, plotModel, "recivered adter infection", OxyColor.FromRgb(0, 255, 0));
                 return plotModel;
             }
         }
@@ -136,7 +256,7 @@ namespace MyCoronaStats
         {
             get
             {
-                if (!_model.dailyStats.dailyStats.Any())
+                if (_model.dailyStats == null || !_model.dailyStats.dailyStats.Any())
                 {
                     return null;
                 }
@@ -159,7 +279,7 @@ namespace MyCoronaStats
 
 
                 var plotModel = new OxyPlot.PlotModel();
-                plotModel.Title = "Neuinfektionen - " + SelectedCountry;
+                plotModel.Title = "new infections - " + SelectedCountry;
                 var dateTimeAxis1 = new DateTimeAxis
                 {
                     CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek,
@@ -167,10 +287,10 @@ namespace MyCoronaStats
                     Position = AxisPosition.Bottom
                 };
                 plotModel.Axes.Add(dateTimeAxis1);
-                addDateToPlotModel(dataNew, plotModel, "Neuinfektionen", OxyColor.FromRgb(255, 0, 0));
-                addDateToPlotModel(dataNewFlatten1, plotModel, "Neuinfektionen (1-Tag-Glättung)", OxyColor.FromRgb(255, 255, 0));
-                addDateToPlotModel(dataNewFlatten2, plotModel, "Neuinfektionen (2-Tage-Glättung)", OxyColor.FromRgb(255, 0, 255));
-                addDateToPlotModel(dataNewFlatten3, plotModel, "Neuinfektionen (3-Tage-Glättung)", OxyColor.FromRgb(0, 255, 255));
+                addDateToPlotModel(dataNew, plotModel, "new infections", OxyColor.FromRgb(255, 0, 0));
+                addDateToPlotModel(dataNewFlatten1, plotModel, "new infections (1-day-smoothing)", OxyColor.FromRgb(255, 255, 0));
+                addDateToPlotModel(dataNewFlatten2, plotModel, "new infections (2-day-smoothing)", OxyColor.FromRgb(255, 0, 255));
+                addDateToPlotModel(dataNewFlatten3, plotModel, "new infections (3-day-smoothing)", OxyColor.FromRgb(0, 255, 255));
                 return plotModel;
             }
         }

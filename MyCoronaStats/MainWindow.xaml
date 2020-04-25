@@ -5,20 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:oxy="http://oxyplot.org/wpf"        xmlns:local="clr-namespace:MyCoronaStats"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <WrapPanel Grid.Row="0">
-            <StackPanel>
-                <Button Command="{Binding CollectDataCommand}" Margin="3" Padding="3">Collect Data</Button>
-                <ComboBox ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3"/>
-            </StackPanel>
-        </WrapPanel>
-        <oxy:PlotView Grid.Row="1" Model="{Binding OxyPlotModelCommulated}" />
-        <oxy:PlotView Grid.Row="2" Model="{Binding OxyPlotModelDaily}" />
-    </Grid>
+        Title="Corona - Data - Viewer" Height="750" Width="1200">
+	<Grid IsEnabled="{Binding MainGridIsEnabled}">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+		<WrapPanel Grid.Row="0">
+			<StackPanel MinWidth="200">
+				<ProgressBar Value="{Binding CollectDateProgress}" Margin="3" Height="24" Visibility="{Binding ProgressBarVisbility}"/>
+				<Button Command="{Binding CollectDataCommand}" Margin="3" Padding="3" Visibility="{Binding CollectDataButtonVisbility}">Collect Data</Button>
+				<ComboBox ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" Visibility="{Binding CountrySelectVisbility}"/>
+			</StackPanel>
+		</WrapPanel>
+		<oxy:PlotView Grid.Row="1" Model="{Binding OxyPlotModelCommulated}" />
+		<oxy:PlotView Grid.Row="2" Model="{Binding OxyPlotModelDaily}" />
+	</Grid>
 </Window>

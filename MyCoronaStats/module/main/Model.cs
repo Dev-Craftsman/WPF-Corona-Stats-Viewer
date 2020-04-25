@@ -10,7 +10,7 @@ namespace MyCoronaStats.module.main
     {
         public Countries countries;
 
-        public DailyStatModels dailyStats = new DailyStatModels();
+        public DailyStatModels dailyStats;
 
     }
 }
