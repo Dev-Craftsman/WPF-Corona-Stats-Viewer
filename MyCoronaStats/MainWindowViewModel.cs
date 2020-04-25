@@ -237,6 +237,9 @@ namespace MyCoronaStats
 
                 var plotModel = new OxyPlot.PlotModel();
                 plotModel.Title = "Corona Data - " + SelectedCountry;
+                plotModel.LegendTitle = "Legend";
+                plotModel.LegendPosition = LegendPosition.LeftTop;
+
                 var dateTimeAxis1 = new DateTimeAxis
                 {
                     CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek,
@@ -280,6 +283,8 @@ namespace MyCoronaStats
 
                 var plotModel = new OxyPlot.PlotModel();
                 plotModel.Title = "new infections - " + SelectedCountry;
+                plotModel.LegendTitle = "Legend";
+                plotModel.LegendPosition = LegendPosition.LeftTop;
                 var dateTimeAxis1 = new DateTimeAxis
                 {
                     CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek,
