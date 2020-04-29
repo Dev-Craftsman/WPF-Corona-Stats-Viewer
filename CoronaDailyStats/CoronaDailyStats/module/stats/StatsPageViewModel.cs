@@ -1,5 +1,5 @@
-﻿using MyCoronaStats.module.countries;
-using MyCoronaStats.module.dailystat;
+﻿using CoronaDailyStats.module.countries;
+using CoronaDailyStats.module.dailystat;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
@@ -11,20 +11,21 @@ using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json;
 using System.Windows.Input;
 using OxyPlot;
 using System.Windows;
+using CoronaDailyStats.module.utils;
+using Newtonsoft.Json;
 
-namespace MyCoronaStats
+namespace CoronaDailyStats.module.stats
 {
-    class MainWindowViewModel : INotifyPropertyChanged
+    class StatsPageViewModel : INotifyPropertyChanged
     {
 
-        internal MainWindowViewModel()
+        internal StatsPageViewModel(main.Model model)
         {
-            CollectDataButtonVisbility = Visibility.Visible;
-            _model = new module.main.Model();
+            MainGridIsEnabled = true;
+            _model = model;
         }
 
         private const string URL_COUNTRIES = "https://covid19.mathdro.id/api/countries";
@@ -61,45 +62,18 @@ namespace MyCoronaStats
             }
         }
 
-
-        private Visibility collectDataButtonVisbility;
-
-        public Visibility CollectDataButtonVisbility
-        {
-            get
-            {
-                return collectDataButtonVisbility;
-            }
-            set
-            {
-                collectDataButtonVisbility = value;
-                OnPropertyChanged(nameof(CollectDataButtonVisbility));
-                OnPropertyChanged(nameof(ProgressBarVisbility));
-                OnPropertyChanged(nameof(MainGridIsEnabled));
-            }
-        }
-
+        private bool mainGridIsEnabled;
         public bool MainGridIsEnabled
         {
             get
             {
-                return collectDataButtonVisbility == Visibility.Visible ? true : false;
+                return mainGridIsEnabled;
             }
-        }
 
-        public Visibility ProgressBarVisbility
-        {
-            get
+            set
             {
-                return collectDataButtonVisbility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-            }
-        }
-
-        public Visibility CountrySelectVisbility
-        {
-            get
-            {
-                return _model.countries == null || !_model.countries.countries.Any() ? Visibility.Collapsed : Visibility.Visible;
+                mainGridIsEnabled = value;
+                OnPropertyChanged(nameof(MainGridIsEnabled));
             }
         }
 
@@ -116,12 +90,11 @@ namespace MyCoronaStats
 
         private void collectDataRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            CollectDataButtonVisbility = Visibility.Visible;
+            MainGridIsEnabled = true;
             if (_model.countries.countries.Any(country => country.name.Equals("Germany")))
             {
                 SelectedCountry = "Germany";
             }
-            OnPropertyChanged(nameof(CountrySelectVisbility));
         }
 
         private void collectDataDoWorkProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -131,7 +104,7 @@ namespace MyCoronaStats
 
         private void collectDataDoWork(object sender, DoWorkEventArgs e)
         {
-            CollectDataButtonVisbility = Visibility.Collapsed;
+            MainGridIsEnabled = false;
 
             DateTime date = new DateTime(2020, 2, 1);
             int fullCount = getFullCount(date);
@@ -141,7 +114,8 @@ namespace MyCoronaStats
 
             WebClient client = new WebClient();
             string countriesString = client.DownloadString(URL_COUNTRIES);
-            _model.countries = JsonSerializer.Deserialize<Countries>(countriesString);
+            
+            _model.countries = JsonConvert.DeserializeObject<Countries>(countriesString);
             _model.dailyStats = new DailyStatModels();
             currentCount++;
             worker.ReportProgress(100 * currentCount / fullCount);
@@ -153,7 +127,7 @@ namespace MyCoronaStats
                 try
                 {
                     string dailyStatSring = client.DownloadString(URL_DAILY_DATA + datePart);
-                    DailyStat[] dailyData = JsonSerializer.Deserialize<DailyStat[]>(dailyStatSring);
+                    DailyStat[] dailyData = JsonConvert.DeserializeObject<DailyStat[]>(dailyStatSring);
                     _model.dailyStats.addDailyStats(dailyData, date);
 
                 }

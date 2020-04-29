@@ -13,17 +13,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace MyCoronaStats
+namespace CoronaDailyStats.module.stats
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaktionslogik für StatsPage.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class StatsPage : UserControl
     {
-        public MainWindow()
+        public StatsPage()
         {
             InitializeComponent();
-            this.DataContext = new MainWindowViewModel();
         }
     }
 }

@@ -1,10 +1,10 @@
-﻿using MyCoronaStats.module.countries;
-using MyCoronaStats.module.dailystat;
+﻿using CoronaDailyStats.module.countries;
+using CoronaDailyStats.module.dailystat;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MyCoronaStats.module.main
+namespace CoronaDailyStats.module.main
 {
     public class Model
     {

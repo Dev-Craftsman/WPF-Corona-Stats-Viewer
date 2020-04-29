@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 
-namespace MyCoronaStats.module.dailystat
+namespace CoronaDailyStats.module.dailystat
 {
     public class DailyStatModels
     {

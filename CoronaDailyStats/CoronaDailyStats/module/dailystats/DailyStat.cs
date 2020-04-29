@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MyCoronaStats.module.dailystat
+namespace CoronaDailyStats.module.dailystat
 {
     public class DailyStat
     {
