@@ -28,7 +28,7 @@
 				<ComboBox MinWidth="200" ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" />
 			</StackPanel>
 		</WrapPanel>
-		<oxy:PlotView Grid.Row="2" Model="{Binding OxyPlotModelCommulated}" />
-		<oxy:PlotView Grid.Row="3" Model="{Binding OxyPlotModelDaily}" />
+		<oxy:PlotView Foreground="Black" Grid.Row="2" Model="{Binding OxyPlotModelCommulated}" />
+		<oxy:PlotView Foreground="Black" Grid.Row="3" Model="{Binding OxyPlotModelDaily}" />
 	</Grid>
 </UserControl>
