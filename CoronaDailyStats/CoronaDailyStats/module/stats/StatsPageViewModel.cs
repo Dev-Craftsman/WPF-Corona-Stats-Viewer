@@ -224,7 +224,7 @@ namespace CoronaDailyStats.module.stats
                 addDateToPlotModel(dataConfirmed, plotModel, "confirmed infections", OxyColor.FromRgb(245, 255, 0));
                 addDateToPlotModel(dataActive, plotModel, "active infections", OxyColor.FromRgb(255, 0, 0));
                 addDateToPlotModel(dataDeath, plotModel, "deaths after infection", OxyColor.FromRgb(0, 0, 0));
-                addDateToPlotModel(dataRecovered, plotModel, "recivered adter infection", OxyColor.FromRgb(0, 255, 0));
+                addDateToPlotModel(dataRecovered, plotModel, "recovered after infection", OxyColor.FromRgb(0, 255, 0));
                 return plotModel;
             }
         }
