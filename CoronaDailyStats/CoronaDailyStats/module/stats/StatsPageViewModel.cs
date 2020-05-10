@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 
 namespace CoronaDailyStats.module.stats
 {
-    class StatsPageViewModel : INotifyPropertyChanged
+    class StatsPageViewModel : ViewModelBase
     {
 
         internal StatsPageViewModel(main.Model model)
@@ -35,14 +35,7 @@ namespace CoronaDailyStats.module.stats
 
         private readonly module.main.Model _model;
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
         private BackgroundWorker worker;
-
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
 
         public ICommand CollectDataCommand => new RelayCommand(collectData, o => true);
 
@@ -114,7 +107,7 @@ namespace CoronaDailyStats.module.stats
 
             WebClient client = new WebClient();
             string countriesString = client.DownloadString(URL_COUNTRIES);
-            
+
             _model.countries = JsonConvert.DeserializeObject<Countries>(countriesString);
             _model.dailyStats = new DailyStatModels();
             currentCount++;
