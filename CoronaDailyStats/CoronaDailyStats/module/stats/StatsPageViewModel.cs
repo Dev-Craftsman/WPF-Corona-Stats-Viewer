@@ -35,9 +35,7 @@ namespace CoronaDailyStats.module.stats
 
         private readonly module.main.Model _model;
 
-        private BackgroundWorker worker;
-
-        public ICommand CollectDataCommand => new RelayCommand(collectData, o => true);
+        public ICommand CollectDataCommand => new RelayCommand(collectDataAsync, o => true);
 
         private int collectDateProgress;
 
@@ -70,32 +68,7 @@ namespace CoronaDailyStats.module.stats
             }
         }
 
-        private void collectData(object obj)
-        {
-            worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
-            worker.WorkerSupportsCancellation = true;
-            worker.DoWork += collectDataDoWork;
-            worker.ProgressChanged += collectDataDoWorkProgressChanged;
-            worker.RunWorkerCompleted += collectDataRunWorkerCompleted;
-            worker.RunWorkerAsync();
-        }
-
-        private void collectDataRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            MainGridIsEnabled = true;
-            if (_model.countries.countries.Any(country => country.name.Equals("Germany")))
-            {
-                SelectedCountry = "Germany";
-            }
-        }
-
-        private void collectDataDoWorkProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            CollectDateProgress = e.ProgressPercentage;
-        }
-
-        private void collectDataDoWork(object sender, DoWorkEventArgs e)
+        private async void collectDataAsync(object obj)
         {
             MainGridIsEnabled = false;
 
@@ -103,15 +76,15 @@ namespace CoronaDailyStats.module.stats
             int fullCount = getFullCount(date);
 
             int currentCount = 0;
-            worker.ReportProgress(100 * currentCount / fullCount);
+            CollectDateProgress = (100 * currentCount / fullCount);
 
             WebClient client = new WebClient();
-            string countriesString = client.DownloadString(URL_COUNTRIES);
+            string countriesString = await client.DownloadStringTaskAsync(URL_COUNTRIES);
 
             _model.countries = JsonConvert.DeserializeObject<Countries>(countriesString);
             _model.dailyStats = new DailyStatModels();
             currentCount++;
-            worker.ReportProgress(100 * currentCount / fullCount);
+            CollectDateProgress = (100 * currentCount / fullCount);
 
             while (date < DateTime.Now)
             {
@@ -119,7 +92,7 @@ namespace CoronaDailyStats.module.stats
 
                 try
                 {
-                    string dailyStatSring = client.DownloadString(URL_DAILY_DATA + datePart);
+                    string dailyStatSring = await client.DownloadStringTaskAsync(URL_DAILY_DATA + datePart);
                     DailyStat[] dailyData = JsonConvert.DeserializeObject<DailyStat[]>(dailyStatSring);
                     _model.dailyStats.addDailyStats(dailyData, date);
 
@@ -130,10 +103,16 @@ namespace CoronaDailyStats.module.stats
                 }
                 date = date.AddDays(1);
                 currentCount++;
-                worker.ReportProgress(100 * currentCount / fullCount);
+                CollectDateProgress = (100 * currentCount / fullCount);
             }
 
             OnPropertyChanged(nameof(Countries));
+
+            MainGridIsEnabled = true;
+            if (_model.countries.countries.Any(country => country.name.Equals("Germany")))
+            {
+                SelectedCountry = "Germany";
+            }
         }
 
         private static int getFullCount(DateTime date)
