@@ -19,12 +19,12 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 		<Grid Grid.Row="0">
-			<ProgressBar Value="{Binding CollectDateProgress}" Margin="0" Padding="0" Height="3" />
+			<ProgressBar Value="{Binding CollectDataProgress}" Margin="0" Padding="0" Height="3" />
 		</Grid>
 		<WrapPanel Grid.Row="1">
 			<StackPanel Orientation="Horizontal">
 				<Button Foreground="Black" MinWidth="200"
-						Command="{Binding CollectDataCommand}" Margin="3" Padding="3" >Collect Data</Button>
+						Command="{Binding CollectDataCommand}" Content="{Binding CollectDataButtonLabel}" Margin="3" Padding="3" />
 				<ComboBox MinWidth="200" ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" />
 			</StackPanel>
 		</WrapPanel>
