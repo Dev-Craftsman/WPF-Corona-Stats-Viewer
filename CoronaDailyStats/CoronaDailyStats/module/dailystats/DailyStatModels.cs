@@ -7,7 +7,7 @@ namespace CoronaDailyStats.module.dailystat
 {
     public class DailyStatModels
     {
-        public Dictionary<DateTime, List<DailyStatModel>> dailyStats = new Dictionary<DateTime, List<DailyStatModel>>();
+        public SortedDictionary<DateTime, List<DailyStatModel>> dailyStats = new SortedDictionary<DateTime, List<DailyStatModel>>();
 
         internal void addDailyStats(DailyStat[] dailyData, DateTime date)
         {

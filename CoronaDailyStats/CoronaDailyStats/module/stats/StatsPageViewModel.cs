@@ -1,27 +1,26 @@
 ﻿using CoronaDailyStats.module.countries;
 using CoronaDailyStats.module.dailystat;
+using CoronaDailyStats.module.utils;
+using Newtonsoft.Json;
+using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Input;
-using OxyPlot;
-using System.Windows;
-using CoronaDailyStats.module.utils;
-using Newtonsoft.Json;
 
 namespace CoronaDailyStats.module.stats
 {
-    class StatsPageViewModel : INotifyPropertyChanged
+    class StatsPageViewModel : ViewModelBase
     {
-
         internal StatsPageViewModel(main.Model model)
         {
             MainGridIsEnabled = true;
@@ -35,30 +34,35 @@ namespace CoronaDailyStats.module.stats
 
         private readonly module.main.Model _model;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public ICommand CollectDataCommand => new RelayCommand(collectDataAsync);
 
-        private BackgroundWorker worker;
-
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
-
-        public ICommand CollectDataCommand => new RelayCommand(collectData, o => true);
-
-        private int collectDateProgress;
-
-        public int CollectDateProgress
+        private int collectDataProgress;
+        public int CollectDataProgress
         {
             get
             {
-                return collectDateProgress;
+                return collectDataProgress;
             }
 
             set
             {
-                collectDateProgress = value;
-                OnPropertyChanged(nameof(CollectDateProgress));
+                collectDataProgress = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string collectDataButtonLabel = "Collect Data";
+        public string CollectDataButtonLabel
+        {
+            get
+            {
+                return collectDataButtonLabel;
+            }
+
+            set
+            {
+                collectDataButtonLabel = value;
+                OnPropertyChanged();
             }
         }
 
@@ -73,94 +77,82 @@ namespace CoronaDailyStats.module.stats
             set
             {
                 mainGridIsEnabled = value;
-                OnPropertyChanged(nameof(MainGridIsEnabled));
+                OnPropertyChanged();
             }
         }
 
-        private void collectData(object obj)
+        private async void collectDataAsync(object obj)
         {
-            worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
-            worker.WorkerSupportsCancellation = true;
-            worker.DoWork += collectDataDoWork;
-            worker.ProgressChanged += collectDataDoWorkProgressChanged;
-            worker.RunWorkerCompleted += collectDataRunWorkerCompleted;
-            worker.RunWorkerAsync();
-        }
+            Stopwatch stopWatch = Stopwatch.StartNew();
 
-        private void collectDataRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
+            MainGridIsEnabled = false;
+
+            DateTime startDate = new DateTime(2020, 2, 1);
+
+            List<DateTime> dates = Enumerable.Range(0, (DateTime.Now - startDate).Days + 1)
+                                             .Select(offset => startDate.AddDays(offset))
+                                             .ToList();
+
+            int totalSteps = dates.Count + 1 /* first get countries step */;
+
+            int completedSteps = 0;
+            CollectDataProgress = 0;
+
+            const int MAX_PARALLEL_DOWNLOADS = 20;
+            ServicePointManager.DefaultConnectionLimit = MAX_PARALLEL_DOWNLOADS;
+
+            using (HttpClient client = new HttpClient())
+            using (var semaphore = new SemaphoreSlim(MAX_PARALLEL_DOWNLOADS))
+            {
+                string countriesString = await client.GetStringAsync(URL_COUNTRIES);
+
+                _model.countries = JsonConvert.DeserializeObject<Countries>(countriesString);
+                _model.dailyStats = new DailyStatModels();
+                completedSteps++;
+                CollectDataProgress = (100 * completedSteps / totalSteps);
+
+                IEnumerable<Task> tasks = dates.Select(async date =>
+                {
+                    await semaphore.WaitAsync();
+
+                    try
+                    {
+                        string datePart = date.ToString("MM-dd-yyyy");
+                        string dailyStatSring = await client.GetStringAsync(URL_DAILY_DATA + datePart);
+                        DailyStat[] dailyData = JsonConvert.DeserializeObject<DailyStat[]>(dailyStatSring);
+                        _model.dailyStats.addDailyStats(dailyData, date);
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        // ignore
+                    }
+                    finally
+                    {
+                        completedSteps++;
+                        CollectDataProgress = (100 * completedSteps / totalSteps);
+                        semaphore.Release();
+                    }
+                });
+
+                await Task.WhenAll(tasks);
+            }
+
+            OnPropertyChanged(nameof(Countries));
+
             MainGridIsEnabled = true;
             if (_model.countries.countries.Any(country => country.name.Equals("Germany")))
             {
                 SelectedCountry = "Germany";
             }
-        }
 
-        private void collectDataDoWorkProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            CollectDateProgress = e.ProgressPercentage;
-        }
-
-        private void collectDataDoWork(object sender, DoWorkEventArgs e)
-        {
-            MainGridIsEnabled = false;
-
-            DateTime date = new DateTime(2020, 2, 1);
-            int fullCount = getFullCount(date);
-
-            int currentCount = 0;
-            worker.ReportProgress(100 * currentCount / fullCount);
-
-            WebClient client = new WebClient();
-            string countriesString = client.DownloadString(URL_COUNTRIES);
-            
-            _model.countries = JsonConvert.DeserializeObject<Countries>(countriesString);
-            _model.dailyStats = new DailyStatModels();
-            currentCount++;
-            worker.ReportProgress(100 * currentCount / fullCount);
-
-            while (date < DateTime.Now)
-            {
-                string datePart = date.ToString("MM-dd-yyyy");
-
-                try
-                {
-                    string dailyStatSring = client.DownloadString(URL_DAILY_DATA + datePart);
-                    DailyStat[] dailyData = JsonConvert.DeserializeObject<DailyStat[]>(dailyStatSring);
-                    _model.dailyStats.addDailyStats(dailyData, date);
-
-                }
-                catch (WebException we)
-                {
-                    we.ToString();
-                }
-                date = date.AddDays(1);
-                currentCount++;
-                worker.ReportProgress(100 * currentCount / fullCount);
-            }
-
-            OnPropertyChanged(nameof(Countries));
-        }
-
-        private static int getFullCount(DateTime date)
-        {
-            int fullCount = 1;
-
-            while (date < DateTime.Now)
-            {
-                date = date.AddDays(1);
-                fullCount++;
-            }
-
-            return fullCount;
+            stopWatch.Stop();
+            double seconds = Math.Round(stopWatch.Elapsed.TotalSeconds, 1, MidpointRounding.AwayFromZero);
+            CollectDataButtonLabel = $"Collect Data took {seconds} secs";
         }
 
         public IEnumerable<string> Countries => _model.countries != null ? _model.countries.countries.Select(country => country.name) : null;
 
         private string _selectedCountry;
-
-
         public string SelectedCountry
         {
             get

@@ -13,7 +13,7 @@ namespace CoronaDailyStats.module.dailystat
         public long recovered { get; set; }
         public long active { get; set; }
 
-        internal double getNewInfection(Dictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date)
+        internal double getNewInfection(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date)
         {
             DateTime oneDayBefore = date.AddDays(-1);
             if (!dailyStats.Keys.Contains(date) || !dailyStats.Keys.Contains(oneDayBefore))
@@ -33,7 +33,7 @@ namespace CoronaDailyStats.module.dailystat
 
 
 
-        internal double getNewInfectionFlatten(Dictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date, int dayIncluded)
+        internal double getNewInfectionFlatten(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date, int dayIncluded)
         {
             double divisor = 1;
             double commulated = getNewInfection(dailyStats, selectedCountry, date);
