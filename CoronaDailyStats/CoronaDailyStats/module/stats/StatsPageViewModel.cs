@@ -165,7 +165,9 @@ namespace CoronaDailyStats.module.stats
                 _selectedCountry = value;
                 OnPropertyChanged(nameof(SelectedCountry));
                 OnPropertyChanged(nameof(OxyPlotModelCommulated));
-                OnPropertyChanged(nameof(OxyPlotModelDaily));
+                OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
+                OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
+
             }
         }
 
@@ -221,7 +223,7 @@ namespace CoronaDailyStats.module.stats
             }
         }
 
-        public OxyPlot.PlotModel OxyPlotModelDaily
+        public OxyPlot.PlotModel OxyPlotModelDailyInfections
         {
             get
             {
@@ -239,10 +241,10 @@ namespace CoronaDailyStats.module.stats
                     var stat = _model.dailyStats.dailyStats[date].FirstOrDefault(d => d.countryRegion == SelectedCountry);
                     if (stat != null)
                     {
-                        dataNew.Add(new DateValue { Date = date, Value = stat.getNewInfection(_model.dailyStats.dailyStats, SelectedCountry, date) });
-                        dataNewFlatten1.Add(new DateValue { Date = date, Value = stat.getNewInfectionFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 1) });
-                        dataNewFlatten2.Add(new DateValue { Date = date, Value = stat.getNewInfectionFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 2) });
-                        dataNewFlatten3.Add(new DateValue { Date = date, Value = stat.getNewInfectionFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 3) });
+                        dataNew.Add(new DateValue { Date = date, Value = stat.GetDataOnDay(_model.dailyStats.dailyStats, SelectedCountry, date, x => x.confirmed) });
+                        dataNewFlatten1.Add(new DateValue { Date = date, Value = stat.GetDataOnDayFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 1, x => x.confirmed) });
+                        dataNewFlatten2.Add(new DateValue { Date = date, Value = stat.GetDataOnDayFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 2, x => x.confirmed) });
+                        dataNewFlatten3.Add(new DateValue { Date = date, Value = stat.GetDataOnDayFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 3, x => x.confirmed) });
                     }
                 });
 
@@ -266,6 +268,50 @@ namespace CoronaDailyStats.module.stats
             }
         }
 
+        public OxyPlot.PlotModel OxyPlotModelDailyDeaths
+        {
+            get
+            {
+                if (_model.dailyStats == null || !_model.dailyStats.dailyStats.Any())
+                {
+                    return null;
+                }
+
+                var dataNew = new Collection<DateValue>();
+                var dataNewFlatten1 = new Collection<DateValue>();
+                var dataNewFlatten2 = new Collection<DateValue>();
+                var dataNewFlatten3 = new Collection<DateValue>();
+                _model.dailyStats.dailyStats.Keys.ToList().ForEach(date =>
+                {
+                    var stat = _model.dailyStats.dailyStats[date].FirstOrDefault(d => d.countryRegion == SelectedCountry);
+                    if (stat != null)
+                    {
+                        dataNew.Add(new DateValue { Date = date, Value = stat.GetDataOnDay(_model.dailyStats.dailyStats, SelectedCountry, date, x => x.deaths) });
+                        dataNewFlatten1.Add(new DateValue { Date = date, Value = stat.GetDataOnDayFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 1, x => x.deaths) });
+                        dataNewFlatten2.Add(new DateValue { Date = date, Value = stat.GetDataOnDayFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 2, x => x.deaths) });
+                        dataNewFlatten3.Add(new DateValue { Date = date, Value = stat.GetDataOnDayFlatten(_model.dailyStats.dailyStats, SelectedCountry, date, 3, x => x.deaths) });
+                    }
+                });
+
+
+                var plotModel = new OxyPlot.PlotModel();
+                plotModel.Title = "deaths - " + SelectedCountry;
+                plotModel.LegendTitle = "Legend";
+                plotModel.LegendPosition = LegendPosition.LeftTop;
+                var dateTimeAxis1 = new DateTimeAxis
+                {
+                    CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek,
+                    FirstDayOfWeek = DayOfWeek.Monday,
+                    Position = AxisPosition.Bottom
+                };
+                plotModel.Axes.Add(dateTimeAxis1);
+                addDateToPlotModel(dataNew, plotModel, "deaths", OxyColor.FromRgb(255, 0, 0));
+                addDateToPlotModel(dataNewFlatten1, plotModel, "deaths (1-day-smoothing)", OxyColor.FromRgb(255, 255, 0));
+                addDateToPlotModel(dataNewFlatten2, plotModel, "deaths (2-day-smoothing)", OxyColor.FromRgb(255, 0, 255));
+                addDateToPlotModel(dataNewFlatten3, plotModel, "deaths (3-day-smoothing)", OxyColor.FromRgb(0, 255, 255));
+                return plotModel;
+            }
+        }
 
         private static void addDateToPlotModel(Collection<DateValue> data, PlotModel plotModel, string title, OxyColor color)
         {

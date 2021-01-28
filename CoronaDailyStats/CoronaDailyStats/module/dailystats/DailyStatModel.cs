@@ -13,7 +13,7 @@ namespace CoronaDailyStats.module.dailystat
         public long recovered { get; set; }
         public long active { get; set; }
 
-        internal double getNewInfection(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date)
+        internal double GetDataOnDay(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date, Func<DailyStatModel, long> dataSelection)
         {
             DateTime oneDayBefore = date.AddDays(-1);
             if (!dailyStats.Keys.Contains(date) || !dailyStats.Keys.Contains(oneDayBefore))
@@ -26,21 +26,19 @@ namespace CoronaDailyStats.module.dailystat
             var stat = dailyStats[date].FirstOrDefault(d => d.countryRegion == selectedCountry);
             if (stat != null && statOneDayBefore != null)
             {
-                return stat.confirmed - statOneDayBefore.confirmed;
+                return dataSelection(stat) - dataSelection(statOneDayBefore);
             }
             return 0;
         }
 
-
-
-        internal double getNewInfectionFlatten(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date, int dayIncluded)
+        internal double GetDataOnDayFlatten(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date, int dayIncluded, Func<DailyStatModel, long> dataSelection)
         {
             double divisor = 1;
-            double commulated = getNewInfection(dailyStats, selectedCountry, date);
+            double commulated = GetDataOnDay(dailyStats, selectedCountry, date, dataSelection);
 
             while (dayIncluded > 0) {
-                var v1 = getNewInfection(dailyStats, selectedCountry, date.AddDays(dayIncluded));
-                var v2 = getNewInfection(dailyStats, selectedCountry, date.AddDays(-dayIncluded));
+                var v1 = GetDataOnDay(dailyStats, selectedCountry, date.AddDays(dayIncluded), dataSelection);
+                var v2 = GetDataOnDay(dailyStats, selectedCountry, date.AddDays(-dayIncluded), dataSelection);
 
                 if (v1 > 0.01)
                 {

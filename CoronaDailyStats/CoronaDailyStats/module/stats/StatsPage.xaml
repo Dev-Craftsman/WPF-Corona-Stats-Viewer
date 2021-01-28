@@ -29,6 +29,13 @@
 			</StackPanel>
 		</WrapPanel>
 		<oxy:PlotView Foreground="Black" Grid.Row="2" Model="{Binding OxyPlotModelCommulated}" />
-		<oxy:PlotView Foreground="Black" Grid.Row="3" Model="{Binding OxyPlotModelDaily}" />
-	</Grid>
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+			<oxy:PlotView Foreground="Black" Grid.Column="0" Model="{Binding OxyPlotModelDailyInfections}" />
+            <oxy:PlotView Foreground="Black" Grid.Column="1" Model="{Binding OxyPlotModelDailyDeaths}" />
+        </Grid>
+    </Grid>
 </UserControl>
