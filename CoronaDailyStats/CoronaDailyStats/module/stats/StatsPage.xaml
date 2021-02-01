@@ -26,15 +26,38 @@
 				<Button Foreground="Black" MinWidth="200"
 						Command="{Binding CollectDataCommand}" Content="{Binding CollectDataButtonLabel}" Margin="3" Padding="3" />
 				<ComboBox MinWidth="200" ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" />
-			</StackPanel>
+                <StackPanel Orientation="Horizontal" Background="GhostWhite" Margin="2">
+                    <Label Content="{Binding LowerDate}"/>
+                    <Controls:RangeSlider Width="200"
+                         Margin="4"
+                         AutoToolTipPlacement="None"
+                         LargeChange="1"
+                         LowerValue="{Binding DataSliderLowerValue}"
+                         UpperValue="{Binding DataSliderUpperValue}"
+                         Maximum="{Binding DataSliderMaximum, Mode=OneWay}"
+                         Minimum="{Binding DataSliderMinimum, Mode=OneWay}"
+                         Orientation="Horizontal"
+                         SmallChange="1"
+                         Style="{DynamicResource MahApps.Styles.RangeSlider.Win10}"
+                         />
+                    <Label Content="{Binding UpperDate}"/>
+                </StackPanel>
+            </StackPanel>
 		</WrapPanel>
-		<oxy:PlotView Foreground="Black" Grid.Row="2" Model="{Binding OxyPlotModelCommulated}" />
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <oxy:PlotView Foreground="Black" Grid.Column="0" Model="{Binding OxyPlotModelCommulated}" />
+            <oxy:PlotView Foreground="Black" Grid.Column="1" Model="{Binding OxyPlotModelDailyInfections}" />
+        </Grid>
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-			<oxy:PlotView Foreground="Black" Grid.Column="0" Model="{Binding OxyPlotModelDailyInfections}" />
+            <oxy:PlotView Foreground="Black" Grid.Column="0" Model="{Binding OxyPlotModelIncidenceValuesFor7Days}" />
             <oxy:PlotView Foreground="Black" Grid.Column="1" Model="{Binding OxyPlotModelDailyDeaths}" />
         </Grid>
     </Grid>

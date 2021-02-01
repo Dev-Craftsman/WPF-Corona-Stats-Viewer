@@ -26,9 +26,9 @@ namespace CoronaDailyStats.module.dailystat
             var stat = dailyStats[date].FirstOrDefault(d => d.countryRegion == selectedCountry);
             if (stat != null && statOneDayBefore != null)
             {
-                return dataSelection(stat) - dataSelection(statOneDayBefore);
+                return Math.Max(dataSelection(stat) - dataSelection(statOneDayBefore), 0d);
             }
-            return 0;
+            return 0d;
         }
 
         internal double GetDataOnDayFlatten(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date, int dayIncluded, Func<DailyStatModel, long> dataSelection)
@@ -56,6 +56,39 @@ namespace CoronaDailyStats.module.dailystat
             }
 
             return commulated / divisor;
+        }
+
+        internal double GetIncidenceValueFor7Days(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date)
+        {
+            var last15Exists = true;
+
+            for (int i = 0; i < 15; i++)
+            {
+                DateTime dateToCheck = date.AddDays(-i);
+                if (!dailyStats.Keys.Contains(dateToCheck) || dailyStats[dateToCheck].FirstOrDefault(d => d.countryRegion == selectedCountry) == null)
+                {
+                    last15Exists = false;
+                    break;
+                }
+            }
+
+            if (last15Exists)
+            {
+                double currentWeek = 0;
+                double previousWeek = 0;
+                for (int i = 0; i < 7; i++)
+                {
+                    DateTime dateToCheck = date.AddDays(-i);
+                    currentWeek += GetDataOnDay(dailyStats, selectedCountry, dateToCheck, d => d.confirmed);
+                }
+                for (int i = 7; i < 14; i++)
+                {
+                    DateTime dateToCheck = date.AddDays(-i);
+                    previousWeek += GetDataOnDay(dailyStats, selectedCountry, dateToCheck, d => d.confirmed);
+                }
+                return previousWeek == 0d ? 0d : Math.Max(Math.Min(currentWeek / previousWeek, 3d), 0d);
+            }
+            return 0d;
         }
     }
 }

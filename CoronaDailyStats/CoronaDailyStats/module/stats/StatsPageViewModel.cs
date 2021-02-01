@@ -81,6 +81,78 @@ namespace CoronaDailyStats.module.stats
             }
         }
 
+        private int _dataSliderLowerValue = 0;
+        public int DataSliderLowerValue
+        {
+            get
+            {
+                return _dataSliderLowerValue;
+            }
+            set
+            {
+                _dataSliderLowerValue = value;
+                OnPropertyChanged(nameof(DataSliderLowerValue));
+                OnPropertyChanged(nameof(LowerDate));
+                OnPropertyChanged(nameof(OxyPlotModelCommulated));
+                OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
+                OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
+                OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
+            }
+        }
+        
+        private int _dataSliderUpperValue = 0;
+        public int DataSliderUpperValue 
+        {
+            get
+            {
+                return _dataSliderUpperValue;
+            }
+            set
+            {
+                _dataSliderUpperValue = value;
+                OnPropertyChanged(nameof(DataSliderUpperValue));
+                OnPropertyChanged(nameof(UpperDate));
+                OnPropertyChanged(nameof(OxyPlotModelCommulated));
+                OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
+                OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
+                OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
+            }
+        }
+
+        public int DataSliderMaximum
+        {
+            get
+            {
+                return _model.dailyStats != null ? _model.dailyStats.dailyStats.Keys.Count() - 1: 0;
+            }
+        }
+        
+        public int DataSliderMinimum => 0;
+
+        public String LowerDate
+        {
+            get
+            {
+                return getDateBySlider(DataSliderLowerValue).ToShortDateString();
+            }
+        }
+        public String UpperDate
+        {
+            get
+            {
+                return getDateBySlider(DataSliderUpperValue).ToShortDateString();
+            }
+        }
+
+        private DateTime getDateBySlider(int sliderValue)
+        {
+            if (_model.dailyStats != null && _model.dailyStats.dailyStats.Keys.Any())
+            {
+                return _model.dailyStats.dailyStats.Keys.ToList()[sliderValue];
+            }
+            return DateTime.Now;
+        }
+
         private async void collectDataAsync(object obj)
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
@@ -145,6 +217,9 @@ namespace CoronaDailyStats.module.stats
                 SelectedCountry = "Germany";
             }
 
+            DataSliderUpperValue = _model.dailyStats.dailyStats.Keys.Count() -1;
+            DataSliderLowerValue = _model.dailyStats.dailyStats.Keys.Count() > 100 ? _model.dailyStats.dailyStats.Keys.Count()-100 : 0;
+
             stopWatch.Stop();
             double seconds = Math.Round(stopWatch.Elapsed.TotalSeconds, 1, MidpointRounding.AwayFromZero);
             CollectDataButtonLabel = $"Collect Data took {seconds} secs";
@@ -167,7 +242,13 @@ namespace CoronaDailyStats.module.stats
                 OnPropertyChanged(nameof(OxyPlotModelCommulated));
                 OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
                 OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
-
+                OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
+                OnPropertyChanged(nameof(DataSliderMinimum));
+                OnPropertyChanged(nameof(DataSliderMaximum));
+                OnPropertyChanged(nameof(DataSliderLowerValue));
+                OnPropertyChanged(nameof(DataSliderUpperValue));
+                OnPropertyChanged(nameof(LowerDate));
+                OnPropertyChanged(nameof(UpperDate));
             }
         }
 
@@ -175,6 +256,12 @@ namespace CoronaDailyStats.module.stats
         {
             public DateTime Date { get; set; }
             public double Value { get; set; }
+        }
+
+
+        private bool isInRange(DateTime dateToCheck)
+        {
+            return dateToCheck.CompareTo(getDateBySlider(DataSliderLowerValue)) >= 0 && dateToCheck.CompareTo(getDateBySlider(DataSliderUpperValue)) <= 0;
         }
 
         public OxyPlot.PlotModel OxyPlotModelCommulated
@@ -192,6 +279,11 @@ namespace CoronaDailyStats.module.stats
                 var dataRecovered = new Collection<DateValue>();
                 _model.dailyStats.dailyStats.Keys.ToList().ForEach(date =>
                 {
+                    if (!isInRange(date))
+                    {
+                        return;
+                    }
+
                     var stat = _model.dailyStats.dailyStats[date].FirstOrDefault(d => d.countryRegion == SelectedCountry);
                     if (stat != null)
                     {
@@ -238,6 +330,11 @@ namespace CoronaDailyStats.module.stats
                 var dataNewFlatten3 = new Collection<DateValue>();
                 _model.dailyStats.dailyStats.Keys.ToList().ForEach(date =>
                 {
+                    if (!isInRange(date))
+                    {
+                        return;
+                    }
+
                     var stat = _model.dailyStats.dailyStats[date].FirstOrDefault(d => d.countryRegion == SelectedCountry);
                     if (stat != null)
                     {
@@ -283,6 +380,11 @@ namespace CoronaDailyStats.module.stats
                 var dataNewFlatten3 = new Collection<DateValue>();
                 _model.dailyStats.dailyStats.Keys.ToList().ForEach(date =>
                 {
+                    if (!isInRange(date))
+                    {
+                        return;
+                    }
+
                     var stat = _model.dailyStats.dailyStats[date].FirstOrDefault(d => d.countryRegion == SelectedCountry);
                     if (stat != null)
                     {
@@ -312,6 +414,50 @@ namespace CoronaDailyStats.module.stats
                 return plotModel;
             }
         }
+
+
+        public OxyPlot.PlotModel OxyPlotModelIncidenceValuesFor7Days
+        {
+            get
+            {
+                if (_model.dailyStats == null || !_model.dailyStats.dailyStats.Any())
+                {
+                    return null;
+                }
+
+                var dataNew = new Collection<DateValue>();
+
+                _model.dailyStats.dailyStats.Keys.ToList().ForEach(date =>
+                {
+                    if (!isInRange(date))
+                    {
+                        return;
+                    }
+
+                    var stat = _model.dailyStats.dailyStats[date].FirstOrDefault(d => d.countryRegion == SelectedCountry);
+                    if (stat != null)
+                    {
+                        dataNew.Add(new DateValue { Date = date, Value = stat.GetIncidenceValueFor7Days(_model.dailyStats.dailyStats, SelectedCountry, date) });
+                    }
+                });
+
+
+                var plotModel = new OxyPlot.PlotModel();
+                plotModel.Title = "incidence value for 7 days - " + SelectedCountry;
+                plotModel.LegendTitle = "Legend";
+                plotModel.LegendPosition = LegendPosition.LeftTop;
+                var dateTimeAxis1 = new DateTimeAxis
+                {
+                    CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek,
+                    FirstDayOfWeek = DayOfWeek.Monday,
+                    Position = AxisPosition.Bottom
+                };
+                plotModel.Axes.Add(dateTimeAxis1);
+                addDateToPlotModel(dataNew, plotModel, "incidence value", OxyColor.FromRgb(255, 0, 0));
+                return plotModel;
+            }
+        }
+
 
         private static void addDateToPlotModel(Collection<DateValue> data, PlotModel plotModel, string title, OxyColor color)
         {
