@@ -26,7 +26,7 @@
 				<Button Foreground="Black" MinWidth="200"
 						Command="{Binding CollectDataCommand}" Content="{Binding CollectDataButtonLabel}" Margin="3" Padding="3" />
 				<ComboBox MinWidth="200" ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" />
-                <StackPanel Orientation="Horizontal" Background="GhostWhite" Margin="2">
+                <StackPanel Orientation="Horizontal" Background="GhostWhite" Margin="2" IsEnabled="{Binding IsSliderEnabled}">
                     <Label Content="{Binding LowerDate}"/>
                     <Controls:RangeSlider Width="200"
                          Margin="4"

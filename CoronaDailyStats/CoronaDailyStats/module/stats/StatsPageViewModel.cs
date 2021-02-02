@@ -25,6 +25,17 @@ namespace CoronaDailyStats.module.stats
         {
             MainGridIsEnabled = true;
             _model = model;
+            _eventDebouncerOxyPlotModels = new Debouncer(TimeSpan.FromSeconds(.75), fireEventOxyPlotModels);
+        }
+
+        private Debouncer _eventDebouncerOxyPlotModels;
+
+        private void fireEventOxyPlotModels()
+        {
+            OnPropertyChanged(nameof(OxyPlotModelCommulated));
+            OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
+            OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
+            OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
         }
 
         private const string URL_COUNTRIES = "https://covid19.mathdro.id/api/countries";
@@ -81,6 +92,8 @@ namespace CoronaDailyStats.module.stats
             }
         }
 
+        public bool IsSliderEnabled => _model.dailyStats != null && _model.dailyStats.dailyStats.Keys.Any();
+
         private int _dataSliderLowerValue = 0;
         public int DataSliderLowerValue
         {
@@ -93,13 +106,10 @@ namespace CoronaDailyStats.module.stats
                 _dataSliderLowerValue = value;
                 OnPropertyChanged(nameof(DataSliderLowerValue));
                 OnPropertyChanged(nameof(LowerDate));
-                OnPropertyChanged(nameof(OxyPlotModelCommulated));
-                OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
-                OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
-                OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
+                _eventDebouncerOxyPlotModels.Invoke();
             }
         }
-        
+
         private int _dataSliderUpperValue = 0;
         public int DataSliderUpperValue 
         {
@@ -110,14 +120,13 @@ namespace CoronaDailyStats.module.stats
             set
             {
                 _dataSliderUpperValue = value;
-                OnPropertyChanged(nameof(DataSliderUpperValue));
                 OnPropertyChanged(nameof(UpperDate));
-                OnPropertyChanged(nameof(OxyPlotModelCommulated));
-                OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
-                OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
-                OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
+                OnPropertyChanged(nameof(DataSliderUpperValue));
+                _eventDebouncerOxyPlotModels.Invoke();
             }
         }
+
+
 
         public int DataSliderMaximum
         {
@@ -249,6 +258,7 @@ namespace CoronaDailyStats.module.stats
                 OnPropertyChanged(nameof(DataSliderUpperValue));
                 OnPropertyChanged(nameof(LowerDate));
                 OnPropertyChanged(nameof(UpperDate));
+                OnPropertyChanged(nameof(IsSliderEnabled));
             }
         }
 

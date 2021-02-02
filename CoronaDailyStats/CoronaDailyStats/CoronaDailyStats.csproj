@@ -166,6 +166,7 @@
       <DependentUpon>StatsPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="module\stats\StatsPageViewModel.cs" />
+    <Compile Include="module\utils\Debouncer.cs" />
     <Compile Include="module\utils\RelayCommand.cs" />
     <Page Include="module\main\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
