@@ -1,7 +1,6 @@
 ﻿using CoronaDailyStats.module.countries;
 using CoronaDailyStats.module.dailystat;
 using CoronaDailyStats.module.utils;
-using Newtonsoft.Json;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -13,6 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -111,7 +111,7 @@ namespace CoronaDailyStats.module.stats
         }
 
         private int _dataSliderUpperValue = 0;
-        public int DataSliderUpperValue 
+        public int DataSliderUpperValue
         {
             get
             {
@@ -132,10 +132,10 @@ namespace CoronaDailyStats.module.stats
         {
             get
             {
-                return _model.dailyStats != null ? _model.dailyStats.dailyStats.Keys.Count() - 1: 0;
+                return _model.dailyStats != null ? _model.dailyStats.dailyStats.Keys.Count() - 1 : 0;
             }
         }
-        
+
         public int DataSliderMinimum => 0;
 
         public String LowerDate
@@ -185,9 +185,7 @@ namespace CoronaDailyStats.module.stats
             using (HttpClient client = new HttpClient())
             using (var semaphore = new SemaphoreSlim(MAX_PARALLEL_DOWNLOADS))
             {
-                string countriesString = await client.GetStringAsync(URL_COUNTRIES);
-
-                _model.countries = JsonConvert.DeserializeObject<Countries>(countriesString);
+                _model.countries = await client.GetFromJsonAsync<Countries>(URL_COUNTRIES);
                 _model.dailyStats = new DailyStatModels();
                 completedSteps++;
                 CollectDataProgress = (100 * completedSteps / totalSteps);
@@ -199,11 +197,10 @@ namespace CoronaDailyStats.module.stats
                     try
                     {
                         string datePart = date.ToString("MM-dd-yyyy");
-                        string dailyStatSring = await client.GetStringAsync(URL_DAILY_DATA + datePart);
-                        DailyStat[] dailyData = JsonConvert.DeserializeObject<DailyStat[]>(dailyStatSring);
+                        DailyStat[] dailyData = await client.GetFromJsonAsync<DailyStat[]>(URL_DAILY_DATA + datePart);
                         _model.dailyStats.addDailyStats(dailyData, date);
                     }
-                    catch (HttpRequestException e)
+                    catch (HttpRequestException)
                     {
                         // ignore
                     }
@@ -226,8 +223,8 @@ namespace CoronaDailyStats.module.stats
                 SelectedCountry = "Germany";
             }
 
-            DataSliderUpperValue = _model.dailyStats.dailyStats.Keys.Count() -1;
-            DataSliderLowerValue = _model.dailyStats.dailyStats.Keys.Count() > 100 ? _model.dailyStats.dailyStats.Keys.Count()-100 : 0;
+            DataSliderUpperValue = _model.dailyStats.dailyStats.Keys.Count() - 1;
+            DataSliderLowerValue = _model.dailyStats.dailyStats.Keys.Count() > 100 ? _model.dailyStats.dailyStats.Keys.Count() - 100 : 0;
 
             stopWatch.Stop();
             double seconds = Math.Round(stopWatch.Elapsed.TotalSeconds, 1, MidpointRounding.AwayFromZero);
