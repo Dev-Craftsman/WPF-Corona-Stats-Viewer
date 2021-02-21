@@ -11,21 +11,22 @@
       d:DesignHeight="450" d:DesignWidth="800"
       >
 
-	<Grid IsEnabled="{Binding MainGridIsEnabled}">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="3px"/>
-			<RowDefinition Height="auto"/>
-			<RowDefinition Height="*"/>
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
-		<Grid Grid.Row="0">
-			<ProgressBar Value="{Binding CollectDataProgress}" Margin="0" Padding="0" Height="3" />
-		</Grid>
-		<WrapPanel Grid.Row="1">
-			<StackPanel Orientation="Horizontal">
-				<Button Foreground="Black" MinWidth="200"
+    <Grid IsEnabled="{Binding MainGridIsEnabled}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="3px"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <ProgressBar Value="{Binding CollectDataProgress}" Margin="0" Padding="0" Height="3" />
+        </Grid>
+        <WrapPanel Grid.Row="1">
+            <StackPanel Orientation="Horizontal">
+                <Button Foreground="Black" MinWidth="200"
 						Command="{Binding CollectDataCommand}" Content="{Binding CollectDataButtonLabel}" Margin="3" Padding="3" />
-				<ComboBox MinWidth="200" ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" />
+                <ComboBox MinWidth="200" ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" />
                 <StackPanel Orientation="Horizontal" Background="GhostWhite" Margin="2" IsEnabled="{Binding IsSliderEnabled}">
                     <Label Content="{Binding LowerDate}"/>
                     <Controls:RangeSlider Width="200"
@@ -43,7 +44,7 @@
                     <Label Content="{Binding UpperDate}"/>
                 </StackPanel>
             </StackPanel>
-		</WrapPanel>
+        </WrapPanel>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -57,8 +58,11 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <oxy:PlotView Foreground="Black" Grid.Column="0" Model="{Binding OxyPlotModelIncidenceValuesFor7Days}" />
+            <oxy:PlotView Foreground="Black" Grid.Column="0" Model="{Binding OxyPlotModelRValuesFor7Days}" />
             <oxy:PlotView Foreground="Black" Grid.Column="1" Model="{Binding OxyPlotModelDailyDeaths}" />
+        </Grid>
+        <Grid Grid.Row="4">
+            <oxy:PlotView Foreground="Black" Grid.Column="0" Model="{Binding OxyPlotModelIncidenceValuesFor7Days}" />
         </Grid>
     </Grid>
 </UserControl>

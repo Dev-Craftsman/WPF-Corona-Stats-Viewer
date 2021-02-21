@@ -35,6 +35,7 @@ namespace CoronaDailyStats.module.stats
             OnPropertyChanged(nameof(OxyPlotModelCommulated));
             OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
             OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
+            OnPropertyChanged(nameof(OxyPlotModelRValuesFor7Days));
             OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
         }
 
@@ -248,6 +249,7 @@ namespace CoronaDailyStats.module.stats
                 OnPropertyChanged(nameof(OxyPlotModelCommulated));
                 OnPropertyChanged(nameof(OxyPlotModelDailyInfections));
                 OnPropertyChanged(nameof(OxyPlotModelDailyDeaths));
+                OnPropertyChanged(nameof(OxyPlotModelRValuesFor7Days));
                 OnPropertyChanged(nameof(OxyPlotModelIncidenceValuesFor7Days));
                 OnPropertyChanged(nameof(DataSliderMinimum));
                 OnPropertyChanged(nameof(DataSliderMaximum));
@@ -423,6 +425,48 @@ namespace CoronaDailyStats.module.stats
         }
 
 
+        public OxyPlot.PlotModel OxyPlotModelRValuesFor7Days
+        {
+            get
+            {
+                if (_model.dailyStats == null || !_model.dailyStats.dailyStats.Any())
+                {
+                    return null;
+                }
+
+                var dataNew = new Collection<DateValue>();
+
+                _model.dailyStats.dailyStats.Keys.ToList().ForEach(date =>
+                {
+                    if (!isInRange(date))
+                    {
+                        return;
+                    }
+
+                    var stat = _model.dailyStats.dailyStats[date].FirstOrDefault(d => d.countryRegion == SelectedCountry);
+                    if (stat != null)
+                    {
+                        dataNew.Add(new DateValue { Date = date, Value = stat.GetRValueFor7Days(_model.dailyStats.dailyStats, SelectedCountry, date) });
+                    }
+                });
+
+
+                var plotModel = new OxyPlot.PlotModel();
+                plotModel.Title = "R value for 7 days - " + SelectedCountry;
+                plotModel.LegendTitle = "Legend";
+                plotModel.LegendPosition = LegendPosition.LeftTop;
+                var dateTimeAxis1 = new DateTimeAxis
+                {
+                    CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek,
+                    FirstDayOfWeek = DayOfWeek.Monday,
+                    Position = AxisPosition.Bottom
+                };
+                plotModel.Axes.Add(dateTimeAxis1);
+                addDateToPlotModel(dataNew, plotModel, "R value", OxyColor.FromRgb(255, 0, 0));
+                return plotModel;
+            }
+        }
+
         public OxyPlot.PlotModel OxyPlotModelIncidenceValuesFor7Days
         {
             get
@@ -450,7 +494,7 @@ namespace CoronaDailyStats.module.stats
 
 
                 var plotModel = new OxyPlot.PlotModel();
-                plotModel.Title = "incidence value for 7 days - " + SelectedCountry;
+                plotModel.Title = "incidence value for 7 days for 100.000 people - " + SelectedCountry;
                 plotModel.LegendTitle = "Legend";
                 plotModel.LegendPosition = LegendPosition.LeftTop;
                 var dateTimeAxis1 = new DateTimeAxis
@@ -464,7 +508,6 @@ namespace CoronaDailyStats.module.stats
                 return plotModel;
             }
         }
-
 
         private static void addDateToPlotModel(Collection<DateValue> data, PlotModel plotModel, string title, OxyColor color)
         {

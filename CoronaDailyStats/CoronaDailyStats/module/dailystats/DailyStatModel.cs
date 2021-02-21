@@ -57,8 +57,43 @@ namespace CoronaDailyStats.module.dailystat
 
             return commulated / divisor;
         }
-
+        
         internal double GetIncidenceValueFor7Days(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date)
+        {
+            // todo works only for Germany at the moment.
+            // next step: connect to public available rest api with population info
+            Dictionary<string, double> populationPerCountry = new Dictionary<string, double>();
+            populationPerCountry.Add("Germany", 82300000);
+
+            if (populationPerCountry.ContainsKey(selectedCountry))
+            {
+                var last7Exists = true;
+
+                for (int i = 0; i < 7; i++)
+                {
+                    DateTime dateToCheck = date.AddDays(-i);
+                    if (!dailyStats.Keys.Contains(dateToCheck) || dailyStats[dateToCheck].FirstOrDefault(d => d.countryRegion == selectedCountry) == null)
+                    {
+                        last7Exists = false;
+                        break;
+                    }
+                }
+
+                if (last7Exists)
+                {
+                    double currentWeek = 0;
+                    for (int i = 0; i < 7; i++)
+                    {
+                        DateTime dateToCheck = date.AddDays(-i);
+                        currentWeek += GetDataOnDay(dailyStats, selectedCountry, dateToCheck, d => d.confirmed);
+                    }
+                    return 100000d * currentWeek / populationPerCountry[selectedCountry];
+                }
+            }
+            return 0d;
+        }
+
+        internal double GetRValueFor7Days(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date)
         {
             var last15Exists = true;
 
