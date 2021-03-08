@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CoronaDailyStats.module.dailystat;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
 
@@ -6,7 +7,9 @@ namespace CoronaDailyStats.module.main
 {
     class AppDbContext : DbContext
     {
-        public DbSet<DailyStatResponse> DailyStatResponses { get; set; }
+        public DbSet<DailyStatAllCountries> DailyStatAllCountries { get; set; }
+
+        public DbSet<DailyStatModel> DailyStatModels { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

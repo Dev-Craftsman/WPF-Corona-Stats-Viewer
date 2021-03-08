@@ -190,8 +190,9 @@ namespace CoronaDailyStats.module.stats
             await dbContext.Database.EnsureCreatedAsync();
 
             var responseCache = await dbContext
-                .DailyStatResponses
-                .ToDictionaryAsync(d => d.Date, d => d.Response);
+                .DailyStatAllCountries
+                .Include(d => d.DailyStatModels)
+                .ToDictionaryAsync(d => d.Date, d => d.DailyStatModels.ToList());
 
             DateTime startDate = new DateTime(2020, 2, 1);
 
@@ -223,14 +224,27 @@ namespace CoronaDailyStats.module.stats
                     {
                         string datePart = date.ToString("MM-dd-yyyy");
 
-                        string cachedDailyStatResponse;
-                        if (!responseCache.TryGetValue(datePart, out cachedDailyStatResponse))
+                        List<DailyStatModel> cachedDailyStatModels;
+                        if (!responseCache.TryGetValue(datePart, out cachedDailyStatModels))
                         {
-                            cachedDailyStatResponse = await client.GetStringAsync(URL_DAILY_DATA + datePart);
-                            dbContext.DailyStatResponses.Add(new DailyStatResponse
+                            var dailyStats = await client.GetFromJsonAsync<DailyStat[]>(URL_DAILY_DATA + datePart);
+
+                            cachedDailyStatModels = dailyStats
+                                .GroupBy(dd => dd.countryRegion)
+                                .Select(group => new DailyStatModel
+                                {
+                                    countryRegion = group.Key,
+                                    confirmed = group.Sum(data => long.TryParse(data.confirmed, out var res) ? res : 0),
+                                    deaths = group.Sum(data => long.TryParse(data.deaths, out var res) ? res : 0),
+                                    recovered = group.Sum(data => long.TryParse(data.recovered, out var res) ? res : 0),
+                                    active = group.Sum(data => long.TryParse(data.active, out var res) ? res : 0)
+                                })
+                                .ToList();
+
+                            dbContext.DailyStatAllCountries.Add(new DailyStatAllCountries
                             {
                                 Date = datePart,
-                                Response = cachedDailyStatResponse
+                                DailyStatModels = cachedDailyStatModels
                             });
                         }
                         else
@@ -239,8 +253,7 @@ namespace CoronaDailyStats.module.stats
                             await Task.Delay(1);
                         }
 
-                        DailyStat[] dailyData = JsonSerializer.Deserialize<DailyStat[]>(cachedDailyStatResponse);
-                        _model.dailyStats.addDailyStats(dailyData, date);
+                        _model.dailyStats.addDailyStats(date, cachedDailyStatModels);
                     }
                     catch (HttpRequestException)
                     {
