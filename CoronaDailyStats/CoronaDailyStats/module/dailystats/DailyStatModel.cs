@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
 
 namespace CoronaDailyStats.module.dailystat
 {
     public class DailyStatModel
     {
+        public long Id { get; set; }
+        public long DailyStatAllCountriesId { get; set; }
+        public DailyStatAllCountries DailyStatAllCountries { get; set; }
+
         public string countryRegion { get; set; }
         public long confirmed { get; set; }
         public long deaths { get; set; }
@@ -36,13 +39,14 @@ namespace CoronaDailyStats.module.dailystat
             double divisor = 1;
             double commulated = GetDataOnDay(dailyStats, selectedCountry, date, dataSelection);
 
-            while (dayIncluded > 0) {
+            while (dayIncluded > 0)
+            {
                 var v1 = GetDataOnDay(dailyStats, selectedCountry, date.AddDays(dayIncluded), dataSelection);
                 var v2 = GetDataOnDay(dailyStats, selectedCountry, date.AddDays(-dayIncluded), dataSelection);
 
                 if (v1 > 0.01)
                 {
-                    commulated += v1; 
+                    commulated += v1;
                     divisor += 1;
                 }
 
@@ -57,7 +61,7 @@ namespace CoronaDailyStats.module.dailystat
 
             return commulated / divisor;
         }
-        
+
         internal double GetIncidenceValueFor7Days(SortedDictionary<DateTime, List<DailyStatModel>> dailyStats, string selectedCountry, DateTime date)
         {
             // todo works only for Germany at the moment.
