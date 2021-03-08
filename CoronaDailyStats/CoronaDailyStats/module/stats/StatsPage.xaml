@@ -26,6 +26,7 @@
             <StackPanel Orientation="Horizontal">
                 <Button Foreground="Black" MinWidth="200"
 						Command="{Binding CollectDataCommand}" Content="{Binding CollectDataButtonLabel}" Margin="3" Padding="3" />
+                <CheckBox IsChecked="{Binding ClearResponseCache}" Margin="3" Content="Clear Cache" />
                 <ComboBox MinWidth="200" ItemsSource="{Binding Countries}" SelectedItem="{Binding SelectedCountry}" Margin="3" Padding="3" />
                 <StackPanel Orientation="Horizontal" Background="GhostWhite" Margin="2" IsEnabled="{Binding IsSliderEnabled}">
                     <Label Content="{Binding LowerDate}"/>

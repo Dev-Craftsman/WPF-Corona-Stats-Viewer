@@ -1,6 +1,8 @@
 ﻿using CoronaDailyStats.module.countries;
 using CoronaDailyStats.module.dailystat;
+using CoronaDailyStats.module.main;
 using CoronaDailyStats.module.utils;
+using Microsoft.EntityFrameworkCore;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -13,6 +15,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -127,7 +130,16 @@ namespace CoronaDailyStats.module.stats
             }
         }
 
-
+        private bool _clearResponseCache;
+        public bool ClearResponseCache
+        {
+            get => _clearResponseCache;
+            set
+            {
+                _clearResponseCache = value;
+                OnPropertyChanged();
+            }
+        }
 
         public int DataSliderMaximum
         {
@@ -168,6 +180,18 @@ namespace CoronaDailyStats.module.stats
             Stopwatch stopWatch = Stopwatch.StartNew();
 
             MainGridIsEnabled = false;
+            using var dbContext = new AppDbContext();
+
+            if (_clearResponseCache)
+            {
+                await dbContext.Database.EnsureDeletedAsync();
+            }
+
+            await dbContext.Database.EnsureCreatedAsync();
+
+            var responseCache = await dbContext
+                .DailyStatResponses
+                .ToDictionaryAsync(d => d.Date, d => d.Response);
 
             DateTime startDate = new DateTime(2020, 2, 1);
 
@@ -198,7 +222,24 @@ namespace CoronaDailyStats.module.stats
                     try
                     {
                         string datePart = date.ToString("MM-dd-yyyy");
-                        DailyStat[] dailyData = await client.GetFromJsonAsync<DailyStat[]>(URL_DAILY_DATA + datePart);
+
+                        string cachedDailyStatResponse;
+                        if (!responseCache.TryGetValue(datePart, out cachedDailyStatResponse))
+                        {
+                            cachedDailyStatResponse = await client.GetStringAsync(URL_DAILY_DATA + datePart);
+                            dbContext.DailyStatResponses.Add(new DailyStatResponse
+                            {
+                                Date = datePart,
+                                Response = cachedDailyStatResponse
+                            });
+                        }
+                        else
+                        {
+                            // necessary for updating UI, when using cache
+                            await Task.Delay(1);
+                        }
+
+                        DailyStat[] dailyData = JsonSerializer.Deserialize<DailyStat[]>(cachedDailyStatResponse);
                         _model.dailyStats.addDailyStats(dailyData, date);
                     }
                     catch (HttpRequestException)
@@ -216,6 +257,8 @@ namespace CoronaDailyStats.module.stats
                 await Task.WhenAll(tasks);
             }
 
+            await dbContext.SaveChangesAsync();
+            ClearResponseCache = false;
             OnPropertyChanged(nameof(Countries));
 
             MainGridIsEnabled = true;
